@@ -1,0 +1,27 @@
+/*@!Encoding:1252*/
+includes
+{
+  //#include "..\DataSources\ASNV_Template_BaseDatatypes.cin"
+}
+
+variables {
+    message 0x100 msg;
+    long mileageCounter = 0;
+}
+
+
+
+on start
+{
+
+}
+
+
+
+on message 0x100 {
+    mileageCounter += this.mileage;
+    write("Mileage received by ICP: %d km", mileageCounter);
+}
+
+
+

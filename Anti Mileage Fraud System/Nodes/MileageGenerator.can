@@ -1,0 +1,32 @@
+/*@!Encoding:1252*/
+includes
+{
+  //#include "..\DataSources\ASNV_Template_BaseDatatypes.cin"
+}
+
+variables {
+    message 0x100 msg;  // Define a CAN message with ID 0x100
+    long mileage = 0; // Simulated mileage
+    msTimer mileageUpdateTimer;
+}
+
+
+
+on start
+{
+  setTimer(mileageUpdateTimer, 0);
+}
+
+
+
+on timer mileageUpdateTimer {
+    
+    mileage = 1;
+    msg.mileage = mileage;
+    output(msg);  
+    //write("Mileage sent to ICP: %d km", mileage);
+    setTimer(mileageUpdateTimer, 1000);  
+}
+
+
+
