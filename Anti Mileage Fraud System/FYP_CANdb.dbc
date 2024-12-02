@@ -37,7 +37,7 @@ BU_: ICP Mileage_Generator
 
 
 BO_ 256 mileage_data: 1 Mileage_Generator
- SG_ mileage : 0|8@1- (1,0) [0|99999] "Km"  ICP
+ SG_ mileage : 0|8@1+ (1,0) [0|255] "m"  ICP
 
 
 
