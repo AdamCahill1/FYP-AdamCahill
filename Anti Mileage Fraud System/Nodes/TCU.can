@@ -1,0 +1,82 @@
+﻿/*@!Encoding:65001*/
+includes
+{
+  
+}
+
+variables {
+    message 0x300 mileageTCU;
+    long mileage;
+    char vin[18] = "1HGCM82633A123437";
+    TcpSocket gListenSocket;
+    TcpSocket gConnectionSocket;
+    byte buffer[22];             
+}
+
+on start {
+    gListenSocket = TcpSocket::Open(IP_Endpoint(0.0.0.0:40001));  
+
+    if (IpGetLastError() != 0) {
+        write("TcpSocket::Open failed with result %d", IpGetLastError());
+    } else {
+        gListenSocket.Listen();
+        write("TCP server is listening on port 40001...");
+    }
+}
+
+on message 0x300 {
+    int i;
+    mileage += this.mileage_tcu; 
+    buffer[0] = mileage & 0xFF;       
+    buffer[1] = (mileage >> 8) & 0xFF;
+    buffer[2] = (mileage >> 16) & 0xFF;
+    buffer[3] = (mileage >> 24) & 0xFF;
+  
+    
+    for (i = 0; i < 18; i++) {
+        buffer[4 + i] = vin[i];
+    }
+  
+    
+    if (gConnectionSocket) {
+        gConnectionSocket.Send(buffer, 22);
+
+        if (gConnectionSocket.GetLastSocketError() != 0) {
+            write("TcpSocket::Send failed with result %d", gConnectionSocket.GetLastSocketError());
+        } else {
+            write("Mileage and Vin sent to client");
+        }
+    } else {
+        write("No TCP connection established yet.");
+    }
+    
+    gConnectionSocket.Close();
+    gListenSocket.Close();
+    write("TCP server stopped.");
+}
+
+
+void OnTcpListen(dword socket, long result) {
+    if (result == 0) {
+        if (gConnectionSocket) {
+            dword socket;
+          
+            socket = TcpAccept( socket );
+          
+            TcpClose(socket);
+        } else {
+            gConnectionSocket = TcpSocket::Accept(gListenSocket);
+            write("Client connected to TCP server.");
+        }
+    } else {
+        write("TCP connection request failed with result %d", result);
+    }
+}
+
+void OnTcpClose(dword socket, long result) {
+    if (result == 0) {
+        write("Client disconnected.");
+        gConnectionSocket.Close(); 
+    }
+}
+

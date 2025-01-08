@@ -5,7 +5,8 @@ includes
 }
 
 variables {
-    message 0x100 msg;
+    message 0x100 mileageInc;
+    message 0x200 mileageTotal;
     long mileageCounter = 0;
 }
 
@@ -13,15 +14,19 @@ variables {
 
 on start
 {
-
+  
 }
+
 
 
 
 on message 0x100 {
     mileageCounter += this.mileage;
-    write("Mileage received by ICP: %d km", mileageCounter);
+    write("Mileage received by ICP: %.2f km", mileageCounter / 1000.0);
 }
 
-
+on message 0x200 {
+    mileageCounter = this.mileage_total;
+    write("Total mileage received by ICP: %.2f km", mileageCounter / 1000.0);
+}
 

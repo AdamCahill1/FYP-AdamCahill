@@ -5,28 +5,99 @@ includes
 }
 
 variables {
-    message 0x100 msg;  // Define a CAN message with ID 0x100
-    long mileage = 0; // Simulated mileage
+    message 0x100 mileageInc;
+    message 0x200 mileageTotal;
+    message 0x300 mileageTCU;
+  
+    long mileage = 0;
+    long mileageIncrement = 0; 
+  
+    long speed = 100; // Speed in km/h
+  
     msTimer mileageUpdateTimer;
+    msTimer fullMileageTimer;
+    
+    dword handle = 0;
+    struct Data {
+        long mileage; 
+    } glbData; 
+    
 }
 
 
-
+//file:///C:/Program%20Files/Vector%20CANoe%20Family%2018/Help01/CANoeDEFamilyHTML5/CANoeDEFamily.htm#Topics/CAPLFunctions/Other/Functions/CAPLfunctionsExapmleFileFunctions.htm?Highlight=openFileRead
 on start
-{
-  setTimer(mileageUpdateTimer, 0);
+{ 
+  byte buffer[4];
+  handle = OpenFileRead("Mileage.Bin", 1);
+
+    if (handle != 0) {
+        if (fileGetBinaryBlock(buffer, elcount(buffer), handle) != 0) {
+            memcpy(glbData, buffer); 
+            mileage = glbData.mileage;
+            write("Mileage loaded from file: %d meters", mileage);
+        } else {
+            write("File exists but is empty. Starting mileage from 0.");
+            mileage = 0;
+        }
+        fileClose(handle); 
+    } else {
+        write("No file found. Starting mileage from 0.");
+        mileage = 0; 
+    }
+  
+  mileageTotal.mileage_total = mileage;
+  output(mileageTotal);
+    
+  setTimer(mileageUpdateTimer, 500);
+  setTimer(fullMileageTimer, 30050);
 }
+
+
+on preStop {
+    byte buffer[4];
+    setTimer(mileageUpdateTimer, 10000);
+    setTimer(fullMileageTimer, 10000);
+  
+    mileageTCU.mileage_tcu = mileage;
+    output(mileageTCU);
+  
+    DeferStop(500);
+  
+    setWritePath("");
+    handle = OpenFileWrite("Mileage.Bin", 1);
+
+    if (handle != 0) {
+        glbData.mileage = mileage;
+        memcpy(buffer, glbData);  
+        fileWriteBinaryBlock(buffer, elcount(buffer), handle);
+        write("Mileage saved to file: %d meters", mileage);
+        fileClose(handle);
+    } else {
+        write("Failed to open file for writing.");
+    }
+       
+}
+
 
 
 
 on timer mileageUpdateTimer {
-    
-    mileage = 1;
-    msg.mileage = mileage;
-    output(msg);  
-    //write("Mileage sent to ICP: %d km", mileage);
+    double metersPerSecond;
+    metersPerSecond = speed * 1000.0 / 3600.0;  
+  
+    mileage += metersPerSecond;
+    mileageIncrement = metersPerSecond;
+  
+    mileageInc.mileage = mileageIncrement;
+    output(mileageInc);
+  
     setTimer(mileageUpdateTimer, 1000);  
 }
 
-
-
+on timer fullMileageTimer {
+    mileageTotal.mileage_total = mileage;
+    output(mileageTotal);
+  
+    setTimer(fullMileageTimer, 30000);  
+}
